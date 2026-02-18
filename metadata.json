@@ -1,0 +1,5 @@
+{
+  "name": "SnapTrip",
+  "description": "영수증을 찍으면 여행 경비 정산 끝! AI 여행 가계부 스냅트립입니다.",
+  "requestFramePermissions": []
+}
