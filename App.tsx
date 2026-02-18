@@ -478,724 +478,724 @@ const App: React.FC = () => {
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
   };
-};
 
-const handleExportCSV = () => {
-  const headers = ['날짜', '시간', '카테고리', '상호명', '금액(KRW)', '통화', '메모'];
-  const rows = currentTrip.receipts.map(r => [
-    r.date,
-    r.time,
-    r.category,
-    `"${r.merchant_name.replace(/"/g, '""')}"`,
-    r.amount,
-    r.currency,
-    `"${(r.reasoning || '').replace(/"/g, '""')}"`
-  ]);
 
-  // Add BOM for Excel UTF-8 compatibility
-  const csvContent = "data:text/csv;charset=utf-8,\uFEFF"
-    + headers.join(",") + "\n"
-    + rows.map(e => e.join(",")).join("\n");
+  const handleExportCSV = () => {
+    const headers = ['날짜', '시간', '카테고리', '상호명', '금액(KRW)', '통화', '메모'];
+    const rows = currentTrip.receipts.map(r => [
+      r.date,
+      r.time,
+      r.category,
+      `"${r.merchant_name.replace(/"/g, '""')}"`,
+      r.amount,
+      r.currency,
+      `"${(r.reasoning || '').replace(/"/g, '""')}"`
+    ]);
 
-  const encodedUri = encodeURI(csvContent);
-  const downloadAnchorNode = document.createElement('a');
-  downloadAnchorNode.setAttribute("href", encodedUri);
-  downloadAnchorNode.setAttribute("download", `${currentTrip.title}_export.csv`);
-  document.body.appendChild(downloadAnchorNode);
-  downloadAnchorNode.click();
-  downloadAnchorNode.remove();
-};
+    // Add BOM for Excel UTF-8 compatibility
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF"
+      + headers.join(",") + "\n"
+      + rows.map(e => e.join(",")).join("\n");
 
-const handleGeocode = async () => {
-  if (!editingReceipt) return;
-  const query = editingReceipt.address || editingReceipt.merchant_name;
-  if (!query) {
-    alert("장소명이나 주소를 입력해주세요.");
-    return;
-  }
+    const encodedUri = encodeURI(csvContent);
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", encodedUri);
+    downloadAnchorNode.setAttribute("download", `${currentTrip.title}_export.csv`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
 
-  setIsGeocoding(true);
-  try {
-    const result = await geocodeLocation(query);
-    if (result) {
-      setEditingReceipt(prev => prev ? ({
-        ...prev,
-        latitude: result.latitude,
-        longitude: result.longitude,
-        address: result.standardized_address || prev.address
-      }) : null);
-    } else {
-      alert("위치를 찾을 수 없습니다. 더 상세한 주소를 입력해보세요.");
+  const handleGeocode = async () => {
+    if (!editingReceipt) return;
+    const query = editingReceipt.address || editingReceipt.merchant_name;
+    if (!query) {
+      alert("장소명이나 주소를 입력해주세요.");
+      return;
     }
-  } catch (e) {
-    console.error(e);
-    alert("위치 검색 중 오류가 발생했습니다.");
-  } finally {
-    setIsGeocoding(false);
-  }
-};
 
-const handleDateSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const date = e.target.value;
-  if (!date) return;
+    setIsGeocoding(true);
+    try {
+      const result = await geocodeLocation(query);
+      if (result) {
+        setEditingReceipt(prev => prev ? ({
+          ...prev,
+          latitude: result.latitude,
+          longitude: result.longitude,
+          address: result.standardized_address || prev.address
+        }) : null);
+      } else {
+        alert("위치를 찾을 수 없습니다. 더 상세한 주소를 입력해보세요.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("위치 검색 중 오류가 발생했습니다.");
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
 
-  const element = document.getElementById(`date-${date}`);
-  if (element) {
-    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    // Add a temporary highlight class for better visibility
-    element.classList.add('bg-blue-50', 'dark:bg-blue-900/20', 'transition-colors', 'duration-500', 'rounded-xl', '-m-2', 'p-2');
-    setTimeout(() => {
-      element.classList.remove('bg-blue-50', 'dark:bg-blue-900/20', 'transition-colors', 'duration-500', 'rounded-xl', '-m-2', 'p-2');
-    }, 2000);
-  } else {
-    alert(`${date}에 해당하는 지출 내역이 없습니다.`);
-  }
-};
+  const handleDateSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const date = e.target.value;
+    if (!date) return;
 
-// --- Render Sections ---
+    const element = document.getElementById(`date-${date}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Add a temporary highlight class for better visibility
+      element.classList.add('bg-blue-50', 'dark:bg-blue-900/20', 'transition-colors', 'duration-500', 'rounded-xl', '-m-2', 'p-2');
+      setTimeout(() => {
+        element.classList.remove('bg-blue-50', 'dark:bg-blue-900/20', 'transition-colors', 'duration-500', 'rounded-xl', '-m-2', 'p-2');
+      }, 2000);
+    } else {
+      alert(`${date}에 해당하는 지출 내역이 없습니다.`);
+    }
+  };
 
-const renderHome = () => {
-  const budgetPercent = Math.min(100, Math.round((totalAmount / currentTrip.budget) * 100));
-  const isOverBudget = remainingBudget < 0;
+  // --- Render Sections ---
 
-  return (
-    <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-      <div className="px-6 mb-6">
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-6 rounded-[30px] text-white shadow-xl shadow-blue-500/20 relative overflow-hidden">
-          <p className="text-sm opacity-80 mb-1">현재까지 총 지출</p>
-          <h2 className="text-3xl font-bold mb-4">{new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(totalAmount)}</h2>
-          <div className="bg-white/10 rounded-2xl p-3 border border-white/10">
-            <div className="flex justify-between text-xs mb-2"><span>예산 대비</span><span className="font-bold">{budgetPercent}%</span></div>
-            <div className="w-full h-1.5 bg-black/20 rounded-full overflow-hidden mb-1">
-              <div className={`h-full ${isOverBudget ? 'bg-red-400' : 'bg-green-400'}`} style={{ width: `${budgetPercent}%` }}></div>
+  const renderHome = () => {
+    const budgetPercent = Math.min(100, Math.round((totalAmount / currentTrip.budget) * 100));
+    const isOverBudget = remainingBudget < 0;
+
+    return (
+      <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <div className="px-6 mb-6">
+          <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-6 rounded-[30px] text-white shadow-xl shadow-blue-500/20 relative overflow-hidden">
+            <p className="text-sm opacity-80 mb-1">현재까지 총 지출</p>
+            <h2 className="text-3xl font-bold mb-4">{new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(totalAmount)}</h2>
+            <div className="bg-white/10 rounded-2xl p-3 border border-white/10">
+              <div className="flex justify-between text-xs mb-2"><span>예산 대비</span><span className="font-bold">{budgetPercent}%</span></div>
+              <div className="w-full h-1.5 bg-black/20 rounded-full overflow-hidden mb-1">
+                <div className={`h-full ${isOverBudget ? 'bg-red-400' : 'bg-green-400'}`} style={{ width: `${budgetPercent}%` }}></div>
+              </div>
+              <p className={`text-[10px] opacity-70 text-right ${isOverBudget ? 'font-bold text-red-100' : ''}`}>
+                {isOverBudget
+                  ? `예산 초과: ${new Intl.NumberFormat('ko-KR').format(Math.abs(remainingBudget))}원`
+                  : `남은 예산: ${new Intl.NumberFormat('ko-KR').format(remainingBudget)}원`
+                }
+              </p>
             </div>
-            <p className={`text-[10px] opacity-70 text-right ${isOverBudget ? 'font-bold text-red-100' : ''}`}>
-              {isOverBudget
-                ? `예산 초과: ${new Intl.NumberFormat('ko-KR').format(Math.abs(remainingBudget))}원`
-                : `남은 예산: ${new Intl.NumberFormat('ko-KR').format(remainingBudget)}원`
-              }
-            </p>
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
           </div>
-          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
         </div>
-      </div>
-      <div className="px-6 mb-6"><Stats receipts={receipts} onClickDetail={() => setActiveTab('report')} /></div>
+        <div className="px-6 mb-6"><Stats receipts={receipts} onClickDetail={() => setActiveTab('report')} /></div>
 
-      {/* Category Filter Scroll View */}
-      <div className="relative mb-6 group">
-        <div
-          ref={scrollContainerRef}
-          className="w-full overflow-x-auto no-scrollbar flex items-center gap-2 px-6 py-1 touch-pan-x cursor-grab active:cursor-grabbing select-none"
-          onMouseDown={handleMouseDown}
-          onMouseLeave={handleMouseLeave}
-          onMouseUp={handleMouseUp}
-          onMouseMove={handleMouseMove}
-        >
-          <button
-            onClick={() => setSelectedCategory('All')}
-            className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border shadow-sm active:scale-95 ${selectedCategory === 'All'
-              ? 'bg-slate-800 dark:bg-white dark:text-slate-900 text-white border-transparent'
-              : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
-              }`}
+        {/* Category Filter Scroll View */}
+        <div className="relative mb-6 group">
+          <div
+            ref={scrollContainerRef}
+            className="w-full overflow-x-auto no-scrollbar flex items-center gap-2 px-6 py-1 touch-pan-x cursor-grab active:cursor-grabbing select-none"
+            onMouseDown={handleMouseDown}
+            onMouseLeave={handleMouseLeave}
+            onMouseUp={handleMouseUp}
+            onMouseMove={handleMouseMove}
           >
-            전체
-          </button>
-          {['식비', '숙소', '교통', '쇼핑', '관광', '기타'].map(cat => (
             <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat as Category)}
-              className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all border shadow-sm active:scale-95 ${selectedCategory === cat
-                ? 'bg-blue-500 text-white border-transparent'
+              onClick={() => setSelectedCategory('All')}
+              className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border shadow-sm active:scale-95 ${selectedCategory === 'All'
+                ? 'bg-slate-800 dark:bg-white dark:text-slate-900 text-white border-transparent'
                 : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
                 }`}
             >
-              <CategoryIcon category={cat as Category} className="w-3.5 h-3.5" />
-              {cat}
+              전체
             </button>
-          ))}
-          {/* Spacer for right padding in overflow scroll */}
-          <div className="w-6 flex-shrink-0"></div>
+            {['식비', '숙소', '교통', '쇼핑', '관광', '기타'].map(cat => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat as Category)}
+                className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all border shadow-sm active:scale-95 ${selectedCategory === cat
+                  ? 'bg-blue-500 text-white border-transparent'
+                  : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
+                  }`}
+              >
+                <CategoryIcon category={cat as Category} className="w-3.5 h-3.5" />
+                {cat}
+              </button>
+            ))}
+            {/* Spacer for right padding in overflow scroll */}
+            <div className="w-6 flex-shrink-0"></div>
+          </div>
+          {/* Gradient Overlay to indicate scrolling */}
+          <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#f9fafb] dark:from-slate-900 to-transparent pointer-events-none"></div>
         </div>
-        {/* Gradient Overlay to indicate scrolling */}
-        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#f9fafb] dark:from-slate-900 to-transparent pointer-events-none"></div>
-      </div>
 
-      <div className="px-6 pb-24">
-        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-          최근 지출 <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-full">{filteredReceipts.length}건</span>
-        </h3>
-        {filteredReceipts.length === 0 ? <p className="text-center py-10 text-slate-400 text-xs font-medium">내역이 없습니다.</p> : filteredReceipts.map(r => <ReceiptCard key={r.id} receipt={r} onDelete={handleDeleteReceipt} onClick={(item) => { setSelectedReceipt(item); setEditingReceipt(item); }} isDarkMode={theme === 'dark'} />)}
+        <div className="px-6 pb-24">
+          <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+            최근 지출 <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-full">{filteredReceipts.length}건</span>
+          </h3>
+          {filteredReceipts.length === 0 ? <p className="text-center py-10 text-slate-400 text-xs font-medium">내역이 없습니다.</p> : filteredReceipts.map(r => <ReceiptCard key={r.id} receipt={r} onDelete={handleDeleteReceipt} onClick={(item) => { setSelectedReceipt(item); setEditingReceipt(item); }} isDarkMode={theme === 'dark'} />)}
+        </div>
+      </div>
+    );
+  };
+
+  const renderMap = () => (
+    <div className="px-6 py-4 pb-24 h-full flex flex-col animate-in fade-in duration-500">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold dark:text-white">동선 기록</h2>
+        <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex shadow-inner">
+          <button onClick={() => setMapViewMode('timeline')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${mapViewMode === 'timeline' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-400'}`}>타임라인</button>
+          <button onClick={() => setMapViewMode('map')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${mapViewMode === 'map' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-400'}`}>지도</button>
+        </div>
+      </div>
+      <div className="flex-1 relative overflow-hidden bg-slate-100 dark:bg-slate-800/50 rounded-3xl min-h-[400px]">
+        {mapViewMode === 'map' ? (
+          <MapComponent receipts={receipts} isDarkMode={theme === 'dark'} />
+        ) : (
+          <div className="h-full overflow-y-auto no-scrollbar p-6 relative">
+            {sortedReceipts.map((r, idx) => (
+              <div key={r.id} className="mb-8 relative pl-12 group cursor-pointer" onClick={() => { setSelectedReceipt(r); setEditingReceipt(r); }}>
+                {idx !== sortedReceipts.length - 1 && (
+                  <div className="absolute left-5 top-2.5 -bottom-8 w-0.5 bg-slate-200 dark:bg-slate-700 -translate-x-1/2"></div>
+                )}
+                <div className="absolute left-2.5 top-0 w-5 h-5 rounded-full bg-blue-500 border-4 border-white dark:border-slate-900 z-10 flex items-center justify-center text-[8px] text-white font-bold">
+                  {sortedReceipts.length - idx}
+                </div>
+                <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 active:scale-[0.98] transition-all">
+                  <p className="text-[10px] text-blue-500 font-bold mb-1">{r.date} {r.time}</p>
+                  <h4 className="text-sm font-bold truncate dark:text-white">{r.merchant_name || '상호 정보 없음'}</h4>
+                  <p className="text-xs text-slate-400 flex items-center gap-1 mt-1 truncate"><Icons.MapPin className="w-3 h-3" />{r.address || '주소 정보 없음'}</p>
+                </div>
+              </div>
+            ))}
+            {sortedReceipts.length === 0 && <p className="text-center py-20 text-slate-400 text-xs">기록이 없습니다.</p>}
+          </div>
+        )}
       </div>
     </div>
   );
-};
 
-const renderMap = () => (
-  <div className="px-6 py-4 pb-24 h-full flex flex-col animate-in fade-in duration-500">
-    <div className="flex justify-between items-center mb-6">
-      <h2 className="text-xl font-bold dark:text-white">동선 기록</h2>
-      <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex shadow-inner">
-        <button onClick={() => setMapViewMode('timeline')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${mapViewMode === 'timeline' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-400'}`}>타임라인</button>
-        <button onClick={() => setMapViewMode('map')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${mapViewMode === 'map' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-400'}`}>지도</button>
+  const renderReport = () => (
+    <div className="px-6 py-4 pb-24 h-full flex flex-col animate-in fade-in duration-500">
+      <div className="mb-6">
+        <h2 className="text-xl font-bold dark:text-white">지출 리포트</h2>
+        <p className="text-xs text-slate-400">카테고리별 지출 현황을 확인하세요.</p>
       </div>
-    </div>
-    <div className="flex-1 relative overflow-hidden bg-slate-100 dark:bg-slate-800/50 rounded-3xl min-h-[400px]">
-      {mapViewMode === 'map' ? (
-        <MapComponent receipts={receipts} isDarkMode={theme === 'dark'} />
-      ) : (
-        <div className="h-full overflow-y-auto no-scrollbar p-6 relative">
-          {sortedReceipts.map((r, idx) => (
-            <div key={r.id} className="mb-8 relative pl-12 group cursor-pointer" onClick={() => { setSelectedReceipt(r); setEditingReceipt(r); }}>
-              {idx !== sortedReceipts.length - 1 && (
-                <div className="absolute left-5 top-2.5 -bottom-8 w-0.5 bg-slate-200 dark:bg-slate-700 -translate-x-1/2"></div>
-              )}
-              <div className="absolute left-2.5 top-0 w-5 h-5 rounded-full bg-blue-500 border-4 border-white dark:border-slate-900 z-10 flex items-center justify-center text-[8px] text-white font-bold">
-                {sortedReceipts.length - idx}
+
+      {/* Pie Chart Section */}
+      <div className="bg-white dark:bg-slate-800 rounded-[30px] p-6 shadow-sm border border-slate-100 dark:border-slate-700 mb-8 flex flex-col items-center relative">
+        <div className="w-full h-64 relative z-10">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={categoryData}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={80}
+                paddingAngle={5}
+                dataKey="value"
+                onMouseEnter={(_, index) => setChartActiveIndex(index)}
+                onMouseLeave={() => setChartActiveIndex(null)}
+              >
+                {categoryData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={CHART_COLORS[entry.name as keyof typeof CHART_COLORS] || '#94a3b8'}
+                    strokeWidth={0}
+                    opacity={chartActiveIndex === index || chartActiveIndex === null ? 1 : 0.3}
+                    className="transition-opacity duration-300"
+                  />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+
+          {/* Center Text */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Total</span>
+            <span className="text-xl font-black text-slate-800 dark:text-white">
+              {new Intl.NumberFormat('ko-KR', { notation: "compact" }).format(totalAmount)}
+            </span>
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="grid grid-cols-2 gap-x-8 gap-y-3 w-full mt-4">
+          {categoryData.map((item, index) => (
+            <div
+              key={item.name}
+              className={`flex items-center justify-between p-2 rounded-xl transition-colors ${chartActiveIndex === index ? 'bg-slate-50 dark:bg-slate-700/50' : ''}`}
+              onMouseEnter={() => setChartActiveIndex(index)}
+              onMouseLeave={() => setChartActiveIndex(null)}
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: CHART_COLORS[item.name as keyof typeof CHART_COLORS] }}></div>
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{item.name}</span>
               </div>
-              <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 active:scale-[0.98] transition-all">
-                <p className="text-[10px] text-blue-500 font-bold mb-1">{r.date} {r.time}</p>
-                <h4 className="text-sm font-bold truncate dark:text-white">{r.merchant_name || '상호 정보 없음'}</h4>
-                <p className="text-xs text-slate-400 flex items-center gap-1 mt-1 truncate"><Icons.MapPin className="w-3 h-3" />{r.address || '주소 정보 없음'}</p>
+              <div className="flex flex-col items-end">
+                <span className="text-xs font-black text-slate-800 dark:text-white">
+                  {Math.round((item.value / totalAmount) * 100)}%
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium">
+                  {new Intl.NumberFormat('ko-KR').format(item.value)}
+                </span>
               </div>
             </div>
           ))}
-          {sortedReceipts.length === 0 && <p className="text-center py-20 text-slate-400 text-xs">기록이 없습니다.</p>}
         </div>
-      )}
-    </div>
-  </div>
-);
+      </div>
 
-const renderReport = () => (
-  <div className="px-6 py-4 pb-24 h-full flex flex-col animate-in fade-in duration-500">
-    <div className="mb-6">
-      <h2 className="text-xl font-bold dark:text-white">지출 리포트</h2>
-      <p className="text-xs text-slate-400">카테고리별 지출 현황을 확인하세요.</p>
-    </div>
-
-    {/* Pie Chart Section */}
-    <div className="bg-white dark:bg-slate-800 rounded-[30px] p-6 shadow-sm border border-slate-100 dark:border-slate-700 mb-8 flex flex-col items-center relative">
-      <div className="w-full h-64 relative z-10">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={categoryData}
-              cx="50%"
-              cy="50%"
-              innerRadius={60}
-              outerRadius={80}
-              paddingAngle={5}
-              dataKey="value"
-              onMouseEnter={(_, index) => setChartActiveIndex(index)}
-              onMouseLeave={() => setChartActiveIndex(null)}
+      {/* Daily Breakdown */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+            일별 상세 내역
+          </h3>
+          <div className="relative">
+            <button
+              onClick={() => {
+                try {
+                  dateInputRef.current?.showPicker();
+                } catch (e) {
+                  console.error(e);
+                  // Fallback for browsers not supporting showPicker
+                  dateInputRef.current?.focus();
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-full text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-500 transition-colors cursor-pointer"
             >
-              {categoryData.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={CHART_COLORS[entry.name as keyof typeof CHART_COLORS] || '#94a3b8'}
-                  strokeWidth={0}
-                  opacity={chartActiveIndex === index || chartActiveIndex === null ? 1 : 0.3}
-                  className="transition-opacity duration-300"
-                />
+              <Icons.Calendar className="w-3.5 h-3.5" />
+              날짜 이동
+            </button>
+            <input
+              ref={dateInputRef}
+              type="date"
+              className="absolute opacity-0 w-px h-px pointer-events-none -z-10"
+              onChange={handleDateSelect}
+              tabIndex={-1}
+            />
+          </div>
+        </div>
+        <div className="space-y-6">
+          {sortedDates.map(date => (
+            <div key={date} id={`date-${date}`} className="scroll-mt-24 transition-all">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                <h4 className="text-xs font-black text-slate-500 dark:text-slate-400">{date}</h4>
+                <div className="h-[1px] flex-1 bg-slate-100 dark:bg-slate-800"></div>
+                <span className="text-[10px] font-bold text-slate-400">
+                  {new Intl.NumberFormat('ko-KR').format(receiptsByDate[date].reduce((sum, r) => sum + r.amount, 0))}원
+                </span>
+              </div>
+              {receiptsByDate[date].map(r => (
+                <ReceiptCard key={r.id} receipt={r} onDelete={handleDeleteReceipt} onClick={(item) => { setSelectedReceipt(item); setEditingReceipt(item); }} isDarkMode={theme === 'dark'} />
               ))}
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
-
-        {/* Center Text */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Total</span>
-          <span className="text-xl font-black text-slate-800 dark:text-white">
-            {new Intl.NumberFormat('ko-KR', { notation: "compact" }).format(totalAmount)}
-          </span>
+            </div>
+          ))}
+          {sortedDates.length === 0 && (
+            <div className="text-center py-10 text-slate-400 text-xs">기록된 지출이 없습니다.</div>
+          )}
         </div>
-      </div>
-
-      {/* Legend */}
-      <div className="grid grid-cols-2 gap-x-8 gap-y-3 w-full mt-4">
-        {categoryData.map((item, index) => (
-          <div
-            key={item.name}
-            className={`flex items-center justify-between p-2 rounded-xl transition-colors ${chartActiveIndex === index ? 'bg-slate-50 dark:bg-slate-700/50' : ''}`}
-            onMouseEnter={() => setChartActiveIndex(index)}
-            onMouseLeave={() => setChartActiveIndex(null)}
-          >
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: CHART_COLORS[item.name as keyof typeof CHART_COLORS] }}></div>
-              <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{item.name}</span>
-            </div>
-            <div className="flex flex-col items-end">
-              <span className="text-xs font-black text-slate-800 dark:text-white">
-                {Math.round((item.value / totalAmount) * 100)}%
-              </span>
-              <span className="text-[10px] text-slate-400 font-medium">
-                {new Intl.NumberFormat('ko-KR').format(item.value)}
-              </span>
-            </div>
-          </div>
-        ))}
       </div>
     </div>
+  );
 
-    {/* Daily Breakdown */}
-    <div className="mb-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-          일별 상세 내역
-        </h3>
-        <div className="relative">
-          <button
-            onClick={() => {
-              try {
-                dateInputRef.current?.showPicker();
-              } catch (e) {
-                console.error(e);
-                // Fallback for browsers not supporting showPicker
-                dateInputRef.current?.focus();
-              }
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-full text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-500 transition-colors cursor-pointer"
-          >
-            <Icons.Calendar className="w-3.5 h-3.5" />
-            날짜 이동
-          </button>
-          <input
-            ref={dateInputRef}
-            type="date"
-            className="absolute opacity-0 w-px h-px pointer-events-none -z-10"
-            onChange={handleDateSelect}
-            tabIndex={-1}
-          />
-        </div>
+  const renderSettings = () => (
+    <div className="px-6 pt-2 pb-24 animate-in fade-in duration-500">
+      <div className="mb-8 flex items-center justify-between">
+        <h2 className="text-xl font-bold dark:text-white">설정</h2>
+        <SnapTripLogo className="w-10 h-10" withText={false} />
       </div>
+
       <div className="space-y-6">
-        {sortedDates.map(date => (
-          <div key={date} id={`date-${date}`} className="scroll-mt-24 transition-all">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-              <h4 className="text-xs font-black text-slate-500 dark:text-slate-400">{date}</h4>
-              <div className="h-[1px] flex-1 bg-slate-100 dark:bg-slate-800"></div>
-              <span className="text-[10px] font-bold text-slate-400">
-                {new Intl.NumberFormat('ko-KR').format(receiptsByDate[date].reduce((sum, r) => sum + r.amount, 0))}원
-              </span>
-            </div>
-            {receiptsByDate[date].map(r => (
-              <ReceiptCard key={r.id} receipt={r} onDelete={handleDeleteReceipt} onClick={(item) => { setSelectedReceipt(item); setEditingReceipt(item); }} isDarkMode={theme === 'dark'} />
-            ))}
-          </div>
-        ))}
-        {sortedDates.length === 0 && (
-          <div className="text-center py-10 text-slate-400 text-xs">기록된 지출이 없습니다.</div>
-        )}
-      </div>
-    </div>
-  </div>
-);
-
-const renderSettings = () => (
-  <div className="px-6 pt-2 pb-24 animate-in fade-in duration-500">
-    <div className="mb-8 flex items-center justify-between">
-      <h2 className="text-xl font-bold dark:text-white">설정</h2>
-      <SnapTripLogo className="w-10 h-10" withText={false} />
-    </div>
-
-    <div className="space-y-6">
-      <div className="bg-white dark:bg-slate-800 rounded-[30px] border border-slate-100 dark:border-slate-700 overflow-hidden shadow-sm">
-        <div className="p-5 flex justify-between items-center border-b border-slate-50 dark:border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 rounded-2xl text-indigo-500"><Icons.RefreshCw className="w-5 h-5" /></div>
-            <span className="text-sm font-black dark:text-slate-200">다크 모드</span>
-          </div>
-          <div className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors ${theme === 'dark' ? 'bg-blue-600' : 'bg-slate-200'}`} onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}>
-            <div className={`w-4 h-4 bg-white rounded-full shadow-md transition-transform ${theme === 'dark' ? 'translate-x-6' : 'translate-x-0'}`}></div>
-          </div>
-        </div>
-        <div className="p-5 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-blue-50 dark:bg-blue-950/40 rounded-2xl text-blue-500"><Icons.Shield className="w-5 h-5" /></div>
-            <span className="text-sm font-black dark:text-slate-200">개인정보 처리방침</span>
-          </div>
-          <Icons.ChevronRight className="w-4 h-4 text-slate-300" />
-        </div>
-      </div>
-
-      {/* Data Export Group */}
-      <div>
-        <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 ml-4 mb-2 uppercase tracking-wider">데이터 관리</h3>
         <div className="bg-white dark:bg-slate-800 rounded-[30px] border border-slate-100 dark:border-slate-700 overflow-hidden shadow-sm">
-          <div onClick={handleExportJSON} className="p-5 flex justify-between items-center border-b border-slate-50 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+          <div className="p-5 flex justify-between items-center border-b border-slate-50 dark:border-slate-700">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl text-emerald-500"><Icons.FileText className="w-5 h-5" /></div>
-              <span className="text-sm font-black dark:text-slate-200">JSON 내보내기</span>
+              <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 rounded-2xl text-indigo-500"><Icons.RefreshCw className="w-5 h-5" /></div>
+              <span className="text-sm font-black dark:text-slate-200">다크 모드</span>
             </div>
-            <Icons.Download className="w-4 h-4 text-slate-300" />
+            <div className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors ${theme === 'dark' ? 'bg-blue-600' : 'bg-slate-200'}`} onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}>
+              <div className={`w-4 h-4 bg-white rounded-full shadow-md transition-transform ${theme === 'dark' ? 'translate-x-6' : 'translate-x-0'}`}></div>
+            </div>
           </div>
-          <div onClick={handleExportCSV} className="p-5 flex justify-between items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+          <div className="p-5 flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl text-emerald-500"><Icons.FileSpreadsheet className="w-5 h-5" /></div>
-              <span className="text-sm font-black dark:text-slate-200">Excel(CSV) 내보내기</span>
+              <div className="p-2.5 bg-blue-50 dark:bg-blue-950/40 rounded-2xl text-blue-500"><Icons.Shield className="w-5 h-5" /></div>
+              <span className="text-sm font-black dark:text-slate-200">개인정보 처리방침</span>
             </div>
-            <Icons.Download className="w-4 h-4 text-slate-300" />
+            <Icons.ChevronRight className="w-4 h-4 text-slate-300" />
           </div>
         </div>
+
+        {/* Data Export Group */}
+        <div>
+          <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 ml-4 mb-2 uppercase tracking-wider">데이터 관리</h3>
+          <div className="bg-white dark:bg-slate-800 rounded-[30px] border border-slate-100 dark:border-slate-700 overflow-hidden shadow-sm">
+            <div onClick={handleExportJSON} className="p-5 flex justify-between items-center border-b border-slate-50 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl text-emerald-500"><Icons.FileText className="w-5 h-5" /></div>
+                <span className="text-sm font-black dark:text-slate-200">JSON 내보내기</span>
+              </div>
+              <Icons.Download className="w-4 h-4 text-slate-300" />
+            </div>
+            <div onClick={handleExportCSV} className="p-5 flex justify-between items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl text-emerald-500"><Icons.FileSpreadsheet className="w-5 h-5" /></div>
+                <span className="text-sm font-black dark:text-slate-200">Excel(CSV) 내보내기</span>
+              </div>
+              <Icons.Download className="w-4 h-4 text-slate-300" />
+            </div>
+          </div>
+        </div>
+
+        <button onClick={handleResetData} className="w-full bg-red-50 dark:bg-red-950/20 p-5 rounded-[24px] text-red-500 text-sm font-black flex justify-center items-center gap-2 active:scale-95 transition-all"><Icons.Trash2 className="w-4 h-4" /> 현재 여행 데이터 삭제</button>
       </div>
-
-      <button onClick={handleResetData} className="w-full bg-red-50 dark:bg-red-950/20 p-5 rounded-[24px] text-red-500 text-sm font-black flex justify-center items-center gap-2 active:scale-95 transition-all"><Icons.Trash2 className="w-4 h-4" /> 현재 여행 데이터 삭제</button>
     </div>
-  </div>
-);
+  );
 
-return (
-  <div className={`min-h-[100dvh] font-sans ${theme === 'dark' ? 'bg-slate-950' : 'bg-[#f9fafb]'} xl:bg-slate-200 xl:flex xl:justify-center xl:items-center xl:py-10 transition-colors duration-500`}>
-    <div className={`w-full h-[100dvh] xl:w-[375px] xl:h-[812px] ${theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-[#f9fafb] text-slate-800'} relative xl:rounded-[56px] xl:border-[10px] xl:border-slate-800 xl:shadow-2xl overflow-hidden flex flex-col mx-auto transition-colors`}>
-      <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={(e) => handleFiles(e.target.files)} />
+  return (
+    <div className={`min-h-[100dvh] font-sans ${theme === 'dark' ? 'bg-slate-950' : 'bg-[#f9fafb]'} xl:bg-slate-200 xl:flex xl:justify-center xl:items-center xl:py-10 transition-colors duration-500`}>
+      <div className={`w-full h-[100dvh] xl:w-[375px] xl:h-[812px] ${theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-[#f9fafb] text-slate-800'} relative xl:rounded-[56px] xl:border-[10px] xl:border-slate-800 xl:shadow-2xl overflow-hidden flex flex-col mx-auto transition-colors`}>
+        <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={(e) => handleFiles(e.target.files)} />
 
-      <div className="px-6 pt-6 pb-2 flex justify-between items-center relative z-20">
-        <div className="cursor-pointer group" onClick={() => setIsTripDropdownOpen(!isTripDropdownOpen)}>
-          <h2 className="text-2xl font-black flex items-center gap-2 group-hover:text-blue-500 transition-colors">
-            {currentTrip.title} <Icons.ChevronDown className={`w-5 h-5 transition-transform ${isTripDropdownOpen ? 'rotate-180 text-blue-500' : '0'}`} />
-          </h2>
-        </div>
-        <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center text-slate-400 border dark:border-slate-700 shadow-sm cursor-pointer active:scale-90 transition-all" onClick={() => setActiveTab('settings')}>
-          <Icons.User className="w-5 h-5" />
-        </div>
-        {isTripDropdownOpen && (
-          <div className="absolute top-16 left-6 w-64 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl rounded-[28px] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)] border border-slate-100/50 dark:border-slate-700/50 p-2 z-30 animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="max-h-[240px] overflow-y-auto no-scrollbar p-1 space-y-1">
-              {trips.map(trip => (
-                <div key={trip.id} onClick={() => { setCurrentTripId(trip.id); setIsTripDropdownOpen(false); }}
-                  className={`
+        <div className="px-6 pt-6 pb-2 flex justify-between items-center relative z-20">
+          <div className="cursor-pointer group" onClick={() => setIsTripDropdownOpen(!isTripDropdownOpen)}>
+            <h2 className="text-2xl font-black flex items-center gap-2 group-hover:text-blue-500 transition-colors">
+              {currentTrip.title} <Icons.ChevronDown className={`w-5 h-5 transition-transform ${isTripDropdownOpen ? 'rotate-180 text-blue-500' : '0'}`} />
+            </h2>
+          </div>
+          <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center text-slate-400 border dark:border-slate-700 shadow-sm cursor-pointer active:scale-90 transition-all" onClick={() => setActiveTab('settings')}>
+            <Icons.User className="w-5 h-5" />
+          </div>
+          {isTripDropdownOpen && (
+            <div className="absolute top-16 left-6 w-64 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl rounded-[28px] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)] border border-slate-100/50 dark:border-slate-700/50 p-2 z-30 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="max-h-[240px] overflow-y-auto no-scrollbar p-1 space-y-1">
+                {trips.map(trip => (
+                  <div key={trip.id} onClick={() => { setCurrentTripId(trip.id); setIsTripDropdownOpen(false); }}
+                    className={`
                         relative p-3.5 rounded-[20px] cursor-pointer flex items-center justify-between transition-all duration-200
                         ${currentTripId === trip.id
-                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30'
-                      : 'hover:bg-slate-100 dark:hover:bg-slate-700/50 text-slate-600 dark:text-slate-300'
-                    }
+                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30'
+                        : 'hover:bg-slate-100 dark:hover:bg-slate-700/50 text-slate-600 dark:text-slate-300'
+                      }
                     `}
-                >
-                  <span className="font-bold text-sm truncate max-w-[140px] tracking-tight">{trip.title}</span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditingTripId(trip.id);
-                      setNewTripForm({
-                        title: trip.title,
-                        budget: trip.budget.toString(),
-                        startDate: trip.startDate,
-                        endDate: trip.endDate,
-                        targetCurrency: trip.targetCurrency || 'JPY',
-                        exchangeRate: trip.exchangeRate ? trip.exchangeRate.toString() : ''
-                      });
-                      setIsNewTripModalOpen(true);
-                      setIsTripDropdownOpen(false);
-                    }}
-                    className={`
+                  >
+                    <span className="font-bold text-sm truncate max-w-[140px] tracking-tight">{trip.title}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingTripId(trip.id);
+                        setNewTripForm({
+                          title: trip.title,
+                          budget: trip.budget.toString(),
+                          startDate: trip.startDate,
+                          endDate: trip.endDate,
+                          targetCurrency: trip.targetCurrency || 'JPY',
+                          exchangeRate: trip.exchangeRate ? trip.exchangeRate.toString() : ''
+                        });
+                        setIsNewTripModalOpen(true);
+                        setIsTripDropdownOpen(false);
+                      }}
+                      className={`
                             p-1.5 rounded-full transition-colors z-10
                             ${currentTripId === trip.id
-                        ? 'text-blue-100 hover:bg-white/20'
-                        : 'text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 hover:text-slate-500'
-                      }
+                          ? 'text-blue-100 hover:bg-white/20'
+                          : 'text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 hover:text-slate-500'
+                        }
                         `}
-                  >
-                    <Icons.Settings className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div className="h-[1px] bg-slate-100 dark:bg-slate-700/50 mx-4 my-2"></div>
-
-            <div onClick={() => {
-              setIsNewTripModalOpen(true);
-              setEditingTripId(null);
-              setNewTripForm({ title: '', budget: '', startDate: '', endDate: '', targetCurrency: 'JPY', exchangeRate: '' });
-              setIsTripDropdownOpen(false);
-            }} className="p-3 mx-1 rounded-[20px] hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer flex items-center justify-center gap-2.5 transition-all group text-blue-500">
-              <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center group-hover:scale-110 transition-transform text-blue-500">
-                <Icons.Plus className="w-4 h-4" />
+                    >
+                      <Icons.Settings className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
               </div>
-              <span className="font-bold text-sm">새 여행 등록</span>
-            </div>
-          </div>
-        )}
-      </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar relative z-0">
-        {activeTab === 'home' && renderHome()}
-        {activeTab === 'map' && renderMap()}
-        {activeTab === 'report' && renderReport()}
-        {activeTab === 'settings' && renderSettings()}
-      </div>
+              <div className="h-[1px] bg-slate-100 dark:bg-slate-700/50 mx-4 my-2"></div>
 
-      <nav className="absolute bottom-0 w-full h-[96px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-t dark:border-slate-800/60 flex justify-around items-start pt-3 z-20 pb-safe shadow-[0_-10px_35px_-15px_rgba(0,0,0,0.15)] transition-colors">
-        <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-1.5 w-1/5 transition-colors ${activeTab === 'home' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-300 dark:text-slate-600'}`}><Icons.Home className="w-6 h-6" /><span className="text-[10px] font-black uppercase">Home</span></button>
-        <button onClick={() => setActiveTab('map')} className={`flex flex-col items-center gap-1.5 w-1/5 transition-colors ${activeTab === 'map' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-300 dark:text-slate-600'}`}><Icons.MapPin className="w-6 h-6" /><span className="text-[10px] font-black uppercase">Map</span></button>
-        <div className="relative w-1/5 flex justify-center -mt-9">
-          <button
-            onClick={() => setIsEntryOptionOpen(!isEntryOptionOpen)}
-            className={`w-[68px] h-[68px] rounded-[24px] flex items-center justify-center text-white shadow-2xl bg-gradient-to-br from-blue-500 to-indigo-600 active:scale-90 transition-all z-30`}
-          >
-            {isEntryOptionOpen ? <Icons.X className="w-8 h-8" /> : <Icons.Camera className="w-8 h-8" />}
-          </button>
-          {isEntryOptionOpen && (
-            <div className="absolute bottom-24 bg-white dark:bg-slate-800 rounded-[28px] shadow-2xl border dark:border-slate-700/60 p-2 flex flex-col gap-1 w-44 animate-in slide-in-from-bottom-6 duration-300 z-40">
-              <button onClick={triggerUpload} className="p-4 rounded-[20px] flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-left"><Icons.Camera className="w-4 h-4 text-blue-500" /><span className="text-xs font-black dark:text-slate-200">영수증 촬영</span></button>
-              <button onClick={handleManualAdd} className="p-4 rounded-[20px] flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-left"><Icons.Pencil className="w-4 h-4 text-blue-500" /><span className="text-xs font-black dark:text-slate-200">수기 지출</span></button>
+              <div onClick={() => {
+                setIsNewTripModalOpen(true);
+                setEditingTripId(null);
+                setNewTripForm({ title: '', budget: '', startDate: '', endDate: '', targetCurrency: 'JPY', exchangeRate: '' });
+                setIsTripDropdownOpen(false);
+              }} className="p-3 mx-1 rounded-[20px] hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer flex items-center justify-center gap-2.5 transition-all group text-blue-500">
+                <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center group-hover:scale-110 transition-transform text-blue-500">
+                  <Icons.Plus className="w-4 h-4" />
+                </div>
+                <span className="font-bold text-sm">새 여행 등록</span>
+              </div>
             </div>
           )}
         </div>
-        <button onClick={() => setActiveTab('report')} className={`flex flex-col items-center gap-1.5 w-1/5 transition-colors ${activeTab === 'report' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-300 dark:text-slate-600'}`}><Icons.PieChart className="w-6 h-6" /><span className="text-[10px] font-black uppercase">Report</span></button>
-        <button onClick={() => setActiveTab('settings')} className={`flex flex-col items-center gap-1.5 w-1/5 transition-colors ${activeTab === 'settings' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-300 dark:text-slate-600'}`}><Icons.Settings className="w-6 h-6" /><span className="text-[10px] font-black uppercase">Info</span></button>
-      </nav>
 
-      {status.isLoading && (
-        <div className="absolute inset-0 bg-slate-900/90 z-50 flex flex-col items-center justify-center text-white font-black backdrop-blur-md animate-in fade-in">
-          <div className="w-16 h-16 border-[5px] border-blue-500 border-t-transparent rounded-full animate-spin mb-6"></div>
-          <p className="animate-pulse tracking-tight text-lg">AI 분석 엔진 가동 중...</p>
+        <div className="flex-1 overflow-y-auto no-scrollbar relative z-0">
+          {activeTab === 'home' && renderHome()}
+          {activeTab === 'map' && renderMap()}
+          {activeTab === 'report' && renderReport()}
+          {activeTab === 'settings' && renderSettings()}
         </div>
-      )}
 
-      {editingReceipt && (
-        <div className="absolute inset-0 bg-black/75 z-40 flex items-end justify-center animate-in fade-in duration-300" onClick={() => setEditingReceipt(null)}>
-          <div className="bg-white dark:bg-slate-900 w-full h-[88%] rounded-t-[50px] p-8 shadow-2xl animate-in slide-in-from-bottom-12 flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="w-16 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mb-10 flex-shrink-0"></div>
-
-            <div className="flex-1 overflow-y-auto no-scrollbar space-y-8">
-              <div className="flex items-center gap-6 mb-4">
-                <div className="w-22 h-22 rounded-[30px] bg-blue-50 dark:bg-blue-900/40 text-blue-500 flex items-center justify-center shadow-inner flex-shrink-0">
-                  <CategoryIcon category={editingReceipt.category} className="w-12 h-12" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1.5 opacity-60">장소명</p>
-                  <input
-                    className="w-full text-2xl font-black dark:text-white leading-tight bg-transparent border-b border-transparent focus:border-blue-500 focus:outline-none transition-all"
-                    value={editingReceipt.merchant_name}
-                    placeholder="가게 이름을 입력하세요"
-                    onChange={(e) => setEditingReceipt({ ...editingReceipt, merchant_name: e.target.value })}
-                  />
-                </div>
+        <nav className="absolute bottom-0 w-full h-[96px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-t dark:border-slate-800/60 flex justify-around items-start pt-3 z-20 pb-safe shadow-[0_-10px_35px_-15px_rgba(0,0,0,0.15)] transition-colors">
+          <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-1.5 w-1/5 transition-colors ${activeTab === 'home' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-300 dark:text-slate-600'}`}><Icons.Home className="w-6 h-6" /><span className="text-[10px] font-black uppercase">Home</span></button>
+          <button onClick={() => setActiveTab('map')} className={`flex flex-col items-center gap-1.5 w-1/5 transition-colors ${activeTab === 'map' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-300 dark:text-slate-600'}`}><Icons.MapPin className="w-6 h-6" /><span className="text-[10px] font-black uppercase">Map</span></button>
+          <div className="relative w-1/5 flex justify-center -mt-9">
+            <button
+              onClick={() => setIsEntryOptionOpen(!isEntryOptionOpen)}
+              className={`w-[68px] h-[68px] rounded-[24px] flex items-center justify-center text-white shadow-2xl bg-gradient-to-br from-blue-500 to-indigo-600 active:scale-90 transition-all z-30`}
+            >
+              {isEntryOptionOpen ? <Icons.X className="w-8 h-8" /> : <Icons.Camera className="w-8 h-8" />}
+            </button>
+            {isEntryOptionOpen && (
+              <div className="absolute bottom-24 bg-white dark:bg-slate-800 rounded-[28px] shadow-2xl border dark:border-slate-700/60 p-2 flex flex-col gap-1 w-44 animate-in slide-in-from-bottom-6 duration-300 z-40">
+                <button onClick={triggerUpload} className="p-4 rounded-[20px] flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-left"><Icons.Camera className="w-4 h-4 text-blue-500" /><span className="text-xs font-black dark:text-slate-200">영수증 촬영</span></button>
+                <button onClick={handleManualAdd} className="p-4 rounded-[20px] flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-left"><Icons.Pencil className="w-4 h-4 text-blue-500" /><span className="text-xs font-black dark:text-slate-200">수기 지출</span></button>
               </div>
+            )}
+          </div>
+          <button onClick={() => setActiveTab('report')} className={`flex flex-col items-center gap-1.5 w-1/5 transition-colors ${activeTab === 'report' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-300 dark:text-slate-600'}`}><Icons.PieChart className="w-6 h-6" /><span className="text-[10px] font-black uppercase">Report</span></button>
+          <button onClick={() => setActiveTab('settings')} className={`flex flex-col items-center gap-1.5 w-1/5 transition-colors ${activeTab === 'settings' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-300 dark:text-slate-600'}`}><Icons.Settings className="w-6 h-6" /><span className="text-[10px] font-black uppercase">Info</span></button>
+        </nav>
 
-              <div className="p-7 bg-blue-50 dark:bg-blue-900/30 rounded-[35px] border border-blue-100/50 dark:border-blue-800/30 shadow-sm">
-                <p className="text-[10px] text-blue-400 font-black uppercase tracking-widest mb-3">지출 금액 (KRW)</p>
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl font-black text-blue-600 dark:text-blue-400">₩</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    className="w-full text-4xl font-black text-blue-600 dark:text-blue-400 bg-transparent focus:outline-none"
-                    value={editingReceipt.amount ? editingReceipt.amount.toLocaleString() : ''}
-                    placeholder="0"
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/,/g, '');
-                      if (/^\d*$/.test(val)) {
-                        setEditingReceipt({ ...editingReceipt, amount: Number(val) });
-                      }
-                    }}
-                  />
-                </div>
-              </div>
+        {status.isLoading && (
+          <div className="absolute inset-0 bg-slate-900/90 z-50 flex flex-col items-center justify-center text-white font-black backdrop-blur-md animate-in fade-in">
+            <div className="w-16 h-16 border-[5px] border-blue-500 border-t-transparent rounded-full animate-spin mb-6"></div>
+            <p className="animate-pulse tracking-tight text-lg">AI 분석 엔진 가동 중...</p>
+          </div>
+        )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-[28px] border border-transparent dark:border-slate-700/50">
-                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-2 opacity-60">날짜</p>
-                  <input
-                    type="date"
-                    className="w-full text-sm font-black dark:text-white bg-transparent focus:outline-none"
-                    value={editingReceipt.date}
-                    onChange={(e) => setEditingReceipt({ ...editingReceipt, date: e.target.value })}
-                  />
-                </div>
-                <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-[28px] border border-transparent dark:border-slate-700/50 relative z-20">
-                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-2 opacity-60">분류</p>
-                  <div className="relative">
-                    <button
-                      onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
-                      className="w-full text-left text-sm font-black dark:text-white bg-transparent focus:outline-none flex items-center justify-between active:opacity-70 transition-opacity"
-                    >
-                      <div className="flex items-center gap-2">
-                        <CategoryIcon category={editingReceipt.category} className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                        {editingReceipt.category}
-                      </div>
-                      <Icons.ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
-                    </button>
+        {editingReceipt && (
+          <div className="absolute inset-0 bg-black/75 z-40 flex items-end justify-center animate-in fade-in duration-300" onClick={() => setEditingReceipt(null)}>
+            <div className="bg-white dark:bg-slate-900 w-full h-[88%] rounded-t-[50px] p-8 shadow-2xl animate-in slide-in-from-bottom-12 flex flex-col" onClick={e => e.stopPropagation()}>
+              <div className="w-16 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mb-10 flex-shrink-0"></div>
 
-                    {isCategoryDropdownOpen && (
-                      <div className="absolute top-full right-0 left-0 mt-3 bg-white dark:bg-slate-800 rounded-[24px] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] border border-slate-100 dark:border-slate-700 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
-                        <div className="p-2 space-y-1">
-                          {['식비', '숙소', '교통', '쇼핑', '관광', '기타'].map(cat => (
-                            <div
-                              key={cat}
-                              onClick={() => {
-                                setEditingReceipt({ ...editingReceipt, category: cat as Category });
-                                setIsCategoryDropdownOpen(false);
-                              }}
-                              className={`p-3 rounded-[16px] flex items-center gap-3 cursor-pointer transition-colors ${editingReceipt.category === cat ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-500' : 'hover:bg-slate-50 dark:hover:bg-slate-700/50 dark:text-slate-200'}`}
-                            >
-                              <CategoryIcon category={cat as Category} className={`w-4 h-4 ${editingReceipt.category === cat ? 'text-blue-500' : 'text-slate-400'}`} />
-                              <span className="text-xs font-bold">{cat}</span>
-                              {editingReceipt.category === cat && <Icons.CheckCircle2 className="w-3.5 h-3.5 ml-auto text-blue-500" />}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+              <div className="flex-1 overflow-y-auto no-scrollbar space-y-8">
+                <div className="flex items-center gap-6 mb-4">
+                  <div className="w-22 h-22 rounded-[30px] bg-blue-50 dark:bg-blue-900/40 text-blue-500 flex items-center justify-center shadow-inner flex-shrink-0">
+                    <CategoryIcon category={editingReceipt.category} className="w-12 h-12" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1.5 opacity-60">장소명</p>
+                    <input
+                      className="w-full text-2xl font-black dark:text-white leading-tight bg-transparent border-b border-transparent focus:border-blue-500 focus:outline-none transition-all"
+                      value={editingReceipt.merchant_name}
+                      placeholder="가게 이름을 입력하세요"
+                      onChange={(e) => setEditingReceipt({ ...editingReceipt, merchant_name: e.target.value })}
+                    />
                   </div>
                 </div>
-              </div>
 
-              <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-[28px] border border-transparent dark:border-slate-700/50">
-                <div className="flex justify-between items-center mb-2">
-                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest opacity-60">위치</p>
-                  {editingReceipt.latitude && editingReceipt.longitude && (
-                    <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full">
-                      <Icons.MapPin className="w-3 h-3" /> 지도 표시 가능
-                    </span>
-                  )}
+                <div className="p-7 bg-blue-50 dark:bg-blue-900/30 rounded-[35px] border border-blue-100/50 dark:border-blue-800/30 shadow-sm">
+                  <p className="text-[10px] text-blue-400 font-black uppercase tracking-widest mb-3">지출 금액 (KRW)</p>
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl font-black text-blue-600 dark:text-blue-400">₩</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      className="w-full text-4xl font-black text-blue-600 dark:text-blue-400 bg-transparent focus:outline-none"
+                      value={editingReceipt.amount ? editingReceipt.amount.toLocaleString() : ''}
+                      placeholder="0"
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/,/g, '');
+                        if (/^\d*$/.test(val)) {
+                          setEditingReceipt({ ...editingReceipt, amount: Number(val) });
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Icons.MapPin className="w-4 h-4 text-slate-400" />
-                  <input
-                    type="text"
-                    className="w-full text-sm font-black dark:text-white bg-transparent focus:outline-none placeholder-slate-300 dark:placeholder-slate-600"
-                    value={editingReceipt.address || ''}
-                    placeholder="위치 정보를 입력하세요"
-                    onChange={(e) => setEditingReceipt({ ...editingReceipt, address: e.target.value })}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleGeocode();
-                    }}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-[28px] border border-transparent dark:border-slate-700/50">
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-2 opacity-60">날짜</p>
+                    <input
+                      type="date"
+                      className="w-full text-sm font-black dark:text-white bg-transparent focus:outline-none"
+                      value={editingReceipt.date}
+                      onChange={(e) => setEditingReceipt({ ...editingReceipt, date: e.target.value })}
+                    />
+                  </div>
+                  <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-[28px] border border-transparent dark:border-slate-700/50 relative z-20">
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-2 opacity-60">분류</p>
+                    <div className="relative">
+                      <button
+                        onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                        className="w-full text-left text-sm font-black dark:text-white bg-transparent focus:outline-none flex items-center justify-between active:opacity-70 transition-opacity"
+                      >
+                        <div className="flex items-center gap-2">
+                          <CategoryIcon category={editingReceipt.category} className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                          {editingReceipt.category}
+                        </div>
+                        <Icons.ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {isCategoryDropdownOpen && (
+                        <div className="absolute top-full right-0 left-0 mt-3 bg-white dark:bg-slate-800 rounded-[24px] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] border border-slate-100 dark:border-slate-700 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                          <div className="p-2 space-y-1">
+                            {['식비', '숙소', '교통', '쇼핑', '관광', '기타'].map(cat => (
+                              <div
+                                key={cat}
+                                onClick={() => {
+                                  setEditingReceipt({ ...editingReceipt, category: cat as Category });
+                                  setIsCategoryDropdownOpen(false);
+                                }}
+                                className={`p-3 rounded-[16px] flex items-center gap-3 cursor-pointer transition-colors ${editingReceipt.category === cat ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-500' : 'hover:bg-slate-50 dark:hover:bg-slate-700/50 dark:text-slate-200'}`}
+                              >
+                                <CategoryIcon category={cat as Category} className={`w-4 h-4 ${editingReceipt.category === cat ? 'text-blue-500' : 'text-slate-400'}`} />
+                                <span className="text-xs font-bold">{cat}</span>
+                                {editingReceipt.category === cat && <Icons.CheckCircle2 className="w-3.5 h-3.5 ml-auto text-blue-500" />}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-[28px] border border-transparent dark:border-slate-700/50">
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest opacity-60">위치</p>
+                    {editingReceipt.latitude && editingReceipt.longitude && (
+                      <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full">
+                        <Icons.MapPin className="w-3 h-3" /> 지도 표시 가능
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Icons.MapPin className="w-4 h-4 text-slate-400" />
+                    <input
+                      type="text"
+                      className="w-full text-sm font-black dark:text-white bg-transparent focus:outline-none placeholder-slate-300 dark:placeholder-slate-600"
+                      value={editingReceipt.address || ''}
+                      placeholder="위치 정보를 입력하세요"
+                      onChange={(e) => setEditingReceipt({ ...editingReceipt, address: e.target.value })}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleGeocode();
+                      }}
+                    />
+                    <button
+                      onClick={handleGeocode}
+                      disabled={isGeocoding || (!editingReceipt.address && !editingReceipt.merchant_name)}
+                      className="flex-shrink-0 p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-bold hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-50"
+                    >
+                      {isGeocoding ? <Icons.RefreshCw className="w-4 h-4 animate-spin" /> : "좌표 검색"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-[28px] border border-transparent dark:border-slate-700/50">
+                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1 opacity-60">추가 메모</p>
+                  <textarea
+                    className="w-full text-sm dark:text-slate-300 font-medium bg-transparent focus:outline-none resize-none min-h-[90px]"
+                    placeholder="상세 정보를 입력하세요."
+                    value={editingReceipt.reasoning}
+                    onChange={(e) => setEditingReceipt({ ...editingReceipt, reasoning: e.target.value })}
                   />
-                  <button
-                    onClick={handleGeocode}
-                    disabled={isGeocoding || (!editingReceipt.address && !editingReceipt.merchant_name)}
-                    className="flex-shrink-0 p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-bold hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-50"
-                  >
-                    {isGeocoding ? <Icons.RefreshCw className="w-4 h-4 animate-spin" /> : "좌표 검색"}
-                  </button>
                 </div>
               </div>
 
-              <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-[28px] border border-transparent dark:border-slate-700/50">
-                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1 opacity-60">추가 메모</p>
-                <textarea
-                  className="w-full text-sm dark:text-slate-300 font-medium bg-transparent focus:outline-none resize-none min-h-[90px]"
-                  placeholder="상세 정보를 입력하세요."
-                  value={editingReceipt.reasoning}
-                  onChange={(e) => setEditingReceipt({ ...editingReceipt, reasoning: e.target.value })}
-                />
+              <div className="mt-8 flex gap-3 flex-shrink-0">
+                {selectedReceipt && (
+                  <button onClick={() => handleDeleteReceipt(selectedReceipt.id)} className="p-5 text-red-500 bg-red-50 dark:bg-red-900/20 rounded-[22px] font-black text-sm flex-1">기록 삭제</button>
+                )}
+                <button onClick={handleSaveReceipt} className="p-5 bg-blue-600 text-white rounded-[22px] font-black text-sm flex-[2] shadow-xl shadow-blue-500/30 active:scale-95 transition-all">내역 저장하기</button>
               </div>
-            </div>
-
-            <div className="mt-8 flex gap-3 flex-shrink-0">
-              {selectedReceipt && (
-                <button onClick={() => handleDeleteReceipt(selectedReceipt.id)} className="p-5 text-red-500 bg-red-50 dark:bg-red-900/20 rounded-[22px] font-black text-sm flex-1">기록 삭제</button>
-              )}
-              <button onClick={handleSaveReceipt} className="p-5 bg-blue-600 text-white rounded-[22px] font-black text-sm flex-[2] shadow-xl shadow-blue-500/30 active:scale-95 transition-all">내역 저장하기</button>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {isNewTripModalOpen && (
-        <div className="absolute inset-0 bg-black/75 z-50 flex items-center justify-center animate-in fade-in" onClick={() => setIsNewTripModalOpen(false)}>
-          <div className="bg-white dark:bg-slate-900 w-[85%] max-h-[85vh] overflow-y-auto rounded-[32px] p-6 shadow-2xl animate-in zoom-in-95 no-scrollbar" onClick={e => e.stopPropagation()}>
-            <h2 className="text-xl font-bold dark:text-white mb-6 sticky top-0 bg-white dark:bg-slate-900 z-10 py-2">{editingTripId ? '여행 설정 수정' : '새 여행 만들기'}</h2>
+        {isNewTripModalOpen && (
+          <div className="absolute inset-0 bg-black/75 z-50 flex items-center justify-center animate-in fade-in" onClick={() => setIsNewTripModalOpen(false)}>
+            <div className="bg-white dark:bg-slate-900 w-[85%] max-h-[85vh] overflow-y-auto rounded-[32px] p-6 shadow-2xl animate-in zoom-in-95 no-scrollbar" onClick={e => e.stopPropagation()}>
+              <h2 className="text-xl font-bold dark:text-white mb-6 sticky top-0 bg-white dark:bg-slate-900 z-10 py-2">{editingTripId ? '여행 설정 수정' : '새 여행 만들기'}</h2>
 
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-slate-400 block mb-1">여행 이름</label>
-                <input
-                  className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl font-bold text-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="예: 도쿄 먹방 여행"
-                  value={newTripForm.title}
-                  onChange={e => setNewTripForm({ ...newTripForm, title: e.target.value })}
-                />
-              </div>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div>
-                  <label className="text-xs font-bold text-slate-400 block mb-1">예산 (KRW)</label>
+                  <label className="text-xs font-bold text-slate-400 block mb-1">여행 이름</label>
                   <input
-                    type="number"
                     className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl font-bold text-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="0"
-                    value={newTripForm.budget}
-                    onChange={e => setNewTripForm({ ...newTripForm, budget: e.target.value })}
+                    placeholder="예: 도쿄 먹방 여행"
+                    value={newTripForm.title}
+                    onChange={e => setNewTripForm({ ...newTripForm, title: e.target.value })}
                   />
                 </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-400 block mb-1">통화 / 환율(선택)</label>
-                  <div className="flex gap-2">
-                    <select
-                      className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl font-bold text-slate-700 dark:text-white focus:outline-none w-24"
-                      value={newTripForm.targetCurrency}
-                      onChange={e => setNewTripForm({ ...newTripForm, targetCurrency: e.target.value })}
-                    >
-                      <option value="JPY">JPY</option>
-                      <option value="USD">USD</option>
-                      <option value="EUR">EUR</option>
-                      <option value="CNY">CNY</option>
-                      <option value="KRW">KRW</option>
-                    </select>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-400 block mb-1">예산 (KRW)</label>
                     <input
                       type="number"
-                      className="flex-1 min-w-0 bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl font-bold text-slate-700 dark:text-white focus:outline-none"
-                      placeholder="환율 (예: 900)"
-                      value={newTripForm.exchangeRate}
-                      onChange={e => setNewTripForm({ ...newTripForm, exchangeRate: e.target.value })}
+                      className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl font-bold text-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="0"
+                      value={newTripForm.budget}
+                      onChange={e => setNewTripForm({ ...newTripForm, budget: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-400 block mb-1">통화 / 환율(선택)</label>
+                    <div className="flex gap-2">
+                      <select
+                        className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl font-bold text-slate-700 dark:text-white focus:outline-none w-24"
+                        value={newTripForm.targetCurrency}
+                        onChange={e => setNewTripForm({ ...newTripForm, targetCurrency: e.target.value })}
+                      >
+                        <option value="JPY">JPY</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="CNY">CNY</option>
+                        <option value="KRW">KRW</option>
+                      </select>
+                      <input
+                        type="number"
+                        className="flex-1 min-w-0 bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl font-bold text-slate-700 dark:text-white focus:outline-none"
+                        placeholder="환율 (예: 900)"
+                        value={newTripForm.exchangeRate}
+                        onChange={e => setNewTripForm({ ...newTripForm, exchangeRate: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-400 block mb-1">시작일</label>
+                    <input
+                      type="date"
+                      className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl font-bold text-slate-700 dark:text-white focus:outline-none"
+                      value={newTripForm.startDate}
+                      onChange={e => setNewTripForm({ ...newTripForm, startDate: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-400 block mb-1">종료일</label>
+                    <input
+                      type="date"
+                      className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl font-bold text-slate-700 dark:text-white focus:outline-none"
+                      value={newTripForm.endDate}
+                      onChange={e => setNewTripForm({ ...newTripForm, endDate: e.target.value })}
                     />
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-slate-400 block mb-1">시작일</label>
-                  <input
-                    type="date"
-                    className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl font-bold text-slate-700 dark:text-white focus:outline-none"
-                    value={newTripForm.startDate}
-                    onChange={e => setNewTripForm({ ...newTripForm, startDate: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-400 block mb-1">종료일</label>
-                  <input
-                    type="date"
-                    className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl font-bold text-slate-700 dark:text-white focus:outline-none"
-                    value={newTripForm.endDate}
-                    onChange={e => setNewTripForm({ ...newTripForm, endDate: e.target.value })}
-                  />
-                </div>
+
+              <div className="flex gap-3 mt-8">
+                {editingTripId && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteTrip}
+                    className="p-4 rounded-2xl bg-red-50 dark:bg-red-900/20 text-red-500 font-bold flex-1 active:scale-95 transition-transform"
+                  >
+                    삭제
+                  </button>
+                )}
+                <button
+                  onClick={handleTripSubmit}
+                  className="p-4 rounded-2xl bg-blue-600 text-white font-bold flex-[2] shadow-lg shadow-blue-500/30"
+                >
+                  {editingTripId ? '저장하기' : '여행 생성'}
+                </button>
               </div>
             </div>
-
-            <div className="flex gap-3 mt-8">
-              {editingTripId && (
-                <button
-                  type="button"
-                  onClick={handleDeleteTrip}
-                  className="p-4 rounded-2xl bg-red-50 dark:bg-red-900/20 text-red-500 font-bold flex-1 active:scale-95 transition-transform"
-                >
-                  삭제
-                </button>
-              )}
-              <button
-                onClick={handleTripSubmit}
-                className="p-4 rounded-2xl bg-blue-600 text-white font-bold flex-[2] shadow-lg shadow-blue-500/30"
-              >
-                {editingTripId ? '저장하기' : '여행 생성'}
-              </button>
-            </div>
           </div>
-        </div>
-      )}
-    </div>
-    <style>{`
+        )}
+      </div>
+      <style>{`
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
         .custom-div-icon { background: none; border: none; }
         .leaflet-popup-content-wrapper { border-radius: 24px; padding: 0; box-shadow: 0 25px 30px -5px rgba(0,0,0,0.2); }
         .leaflet-popup-content { margin: 16px; }
       `}</style>
-  </div>
-);
+    </div>
+  );
 };
 
 export default App;
